@@ -118,6 +118,13 @@ def create_video_from_frames(frames, output_video_path):
     return output_video_path
 
 
+COLOR_MAPPING = {
+    'Bullet_impact': (255, 0, 0),  # 파란색
+    'Explosion_impact': (0, 255, 0),  # 초록색
+    'normal_crack': (0, 0, 255),  # 빨간색
+    'severe_crack': (255, 255, 0)  # 노란색
+}
+
 
 def draw_boxes(image, results):
     for result in results.xyxy[0]:
@@ -126,7 +133,9 @@ def draw_boxes(image, results):
         label = CLASS_MAPPING.get(label_index, 'Unknown')  # 객체 클래스
         conf = result[4]  # 신뢰도
         x1, y1, x2, y2 = map(int, box)
-        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        color = COLOR_MAPPING.get(label, (0, 0, 0))
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
         cv2.putText(image, f'({label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     return image
