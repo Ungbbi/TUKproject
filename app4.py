@@ -6,10 +6,11 @@ import time
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 
 SAVE_DIR = './saved_Detection'
+SAVE_DIR_video = './saved_Detection_video'
 
 app = Flask(__name__)
 
-model_path = "./yolov5s.pt"
+model_path = "./best.pt"
 
 model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
 
@@ -62,30 +63,67 @@ def process_video(cap):
     fps = cap.get(cv2.CAP_PROP_FPS)  # 동영상 프레임 속도
 
     count = 0
+    frame_rate = 0.1
+    interval_frames = int(fps * frame_rate)
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
         count += 1
-        results = model(frame)
+        if count % interval_frames == 0:
+            results = model(frame)
 
-        filename = f'frame_{count}.jpg'
-        filepath = os.path.join(SAVE_DIR, filename)
+            filename = f'frame_{count}.jpg'
+            filepath = os.path.join(SAVE_DIR, filename)
 
-        processed_frame = draw_boxes(frame, results)
+            processed_frame = draw_boxes(frame, results)
 
-        cv2.imwrite(filepath, processed_frame)
-        frames.append(filepath)
+            cv2.imwrite(filepath, processed_frame)
+            frames.append(filepath)
+
+    output_video_path = os.path.join(SAVE_DIR_video, 'processed_video.mp4')
+    create_video_from_frames(frames, output_video_path)
 
     cap.release()
     return frames
 
 
+CLASS_MAPPING = {
+    0: 'Bullet_impact',
+    1: 'Explosion_impact',
+    2: 'normal_crack',
+    3: 'severe_crack'
+}
+
+
+def create_video_from_frames(frames, output_video_path):
+    if not frames:
+        return None
+
+    frame = cv2.imread(frames[0])
+    height, width, _ = frame.shape
+
+    # 비디오 저장 객체 생성
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_video_path, fourcc, 30, (width, height))  # 여기서 30은 임의의 프레임 속도입니다.
+
+    for frame_path in frames:
+        frame = cv2.imread(frame_path)
+        out.write(frame)
+
+    out.release()
+
+    return output_video_path
+
+
+
 def draw_boxes(image, results):
     for result in results.xyxy[0]:
         box = result[:4]  # 바운딩 박스의 좌표값 (x1, y1, x2, y2)
-        label = result[5]  # 객체 클래스
+        label_index = int(result[5])
+        label = CLASS_MAPPING.get(label_index, 'Unknown')  # 객체 클래스
         conf = result[4]  # 신뢰도
         x1, y1, x2, y2 = map(int, box)
         cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
