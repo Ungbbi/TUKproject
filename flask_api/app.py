@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 model_path = "./best.pt"
 
-model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
+model = torch.hub.load('../custom_yolov5', 'custom', path=model_path, source='local')
 
 
 @app.route('/', methods=['GET', 'POST'])
