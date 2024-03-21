@@ -3,16 +3,23 @@ import cv2
 import torch
 import time
 
+
+import sys
+
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 
 SAVE_DIR = './saved_Detection'
 SAVE_DIR_video = './saved_Detection_video'
 
+## sys.path.insert(0, '../custom_yolov5')
+
 app = Flask(__name__)
 
-model_path = "./best.pt"
+model_path = "/app/TUKproject/flask_api/best.pt"
 
-model = torch.hub.load('../custom_yolov5', 'custom', path=model_path, source='local')
+## model = torch.hub.load('../custom_yolov5', 'custom', path=model_path, source='local')
+
+model = torch.load(model_path)
 
 
 @app.route('/', methods=['GET', 'POST'])
